@@ -8,9 +8,16 @@ en **C**, tournant sur **Zeal 8-bit OS** (CPU Z80).
 - `dumbif` est le **successeur** de `~/projects/zeal/zeal-if-compact/zeal-if-compact`,
   mais il est **réécrit intégralement from scratch**. L'ancien code n'est **pas** à
   réutiliser ni à porter ; il ne sert que de référence d'intention si besoin.
-- État actuel : **squelette**. `src/main.c` ne contient qu'un `printf` de test issu du
-  template. L'architecture (format de scénario, parser, moteur, boucle de jeu) est
-  **à définir avec l'utilisateur** — ne rien présupposer.
+- État actuel (2026-09-19) : **premier jalon fonctionnel**, testé OK par l'utilisateur.
+  `src/main.c` reçoit le chemin du `.dat` en argument, vérifie sa longueur, l'ouvre
+  (`open`, `O_RDONLY`), appelle `read10(fd)` puis ferme le fichier.
+  `read10()` (`src/scene.c`, prototype dans `src/scene.h`) lit et affiche les
+  10 premiers octets du fichier. C'est du code **câblé de test** : dans le découpage
+  validé, la lecture du `.dat` (`read`/`seek`) relève de `story.c`, pas de `scene.c`.
+  `story.c/.h`, `input.c/.h` et `dumbif.h` existent mais sont **vides**.
+- Le format de scénario, le parser, le moteur et la boucle de jeu restent **à définir
+  avec l'utilisateur** — ne rien présupposer. Documents de travail à la racine :
+  `scene_design.md` (format runtime), `file-management.md` (gestion des fichiers).
 - Cible de test : **émulateur natif** Zeal (voir « Exécuter / tester »).
 
 ## Repères de l'écosystème (chemins locaux)
@@ -35,7 +42,13 @@ Les deux copies de `Zeal-8-bit-OS` sont au même commit (`9bd3296`) et leurs
 ## Construire
 
 Le projet est un projet **CMake + SDCC**, généré depuis le template ZDE `zgdk`.
-`CMakeLists.txt:24` fait `include($ENV{ZOS_PATH}/cmake/zos_init.cmake)`.
+`CMakeLists.txt:22` fait `include($ENV{ZOS_PATH}/cmake/zos_init.cmake)`.
+
+**Chaque `.c` doit être listé dans `add_executable`** (`CMakeLists.txt:32-35`,
+actuellement `src/main.c` et `src/scene.c`, séparés par des espaces/retours à la
+ligne, jamais par des virgules). Un `.c` absent n'est pas compilé et le lien échoue
+(`?ASlink-Warning-Undefined Global '_<fonction>'`). Le `make` reconfigure CMake
+tout seul quand `CMakeLists.txt` change.
 
 Le build de référence se fait **dans le conteneur ZDE** (confirmé par
 `build/CMakeCache.txt` : `CMAKE_HOME_DIRECTORY=/src`,
@@ -167,18 +180,38 @@ Headers : `zos_sys.h`, `zos_vfs.h`, `zos_video.h`, `zos_keyboard.h`, `zos_time.h
   la validation de l'utilisateur avant d'écrire ou de modifier des fichiers.
 - Réponses et échanges **en français** ; identifiants, commentaires de code et
   messages de commit selon la convention que l'utilisateur fixera.
-- Le projet **n'est pas encore un dépôt git** (pas de `.git`), bien qu'un `.gitignore`
-  existe.
+- **Versionnage** (depuis le 2026-09-19) : dépôt git, branche `main`, remote `origin`
+  en **HTTPS** `https://github.com/fix-6-t-8/dumbif.git` (la clé SSH locale n'est pas
+  enregistrée sur GitHub ; les identifiants passent par `credential.helper store`).
+  `main` suit `origin/main`. `.gitignore` exclut notamment `bin/`, `build/`,
+  `.claude/memory/` et `.claude/settings.local.json`. Commits et push : faits par
+  l'utilisateur.
 
 ## Arborescence
 
 ```
 dumbif/
-├── CMakeLists.txt      # CMake + SDCC, cible `dumbif`
-├── src/main.c          # squelette (hello world) — à remplacer
-├── bin/                # sorties de build : .bin / .ihx / .map
-├── build/              # répertoire CMake (généré dans le conteneur ZDE)
+├── CMakeLists.txt      # CMake + SDCC, cible `dumbif` (sources : main.c, scene.c)
+├── src/
+│   ├── main.c          # argument -> open -> read10() -> close
+│   ├── scene.c/.h      # read10() : lit et affiche 10 octets (test câblé)
+│   ├── story.c/.h      # vides
+│   ├── input.c/.h      # vides
+│   └── dumbif.h        # vide
+├── story/              # dumb.if, dumb.dat (scénario de test)
+├── bin/                # sorties de build : .bin / .ihx / .map (ignoré par git)
+├── build/              # répertoire CMake, généré dans le conteneur ZDE (ignoré)
+├── scene_design.md     # format runtime des scènes
+├── file-management.md  # synthèse gestion des fichiers sous Zeal
 ├── CHANGELOG           # 1.0.0 - 2026-08-23 : création du projet
 ├── README.md           # texte du template, à réécrire
-└── dumbif.txt          # page de manuel (roff), texte du template
+├── dumbif.txt          # page de manuel (roff), texte du template
+├── LICENSE
+└── .gitignore
 ```
+
+## Prochaine étape
+
+Aucune prochaine étape n'a été définie lors de la session du 2026-09-19. Seule
+remarque en suspens : la lecture du `.dat` (`read10`) devra quitter `scene.c` pour
+`story.c`, conformément au découpage validé.
