@@ -1,0 +1,10 @@
+bin/
+*.zip
+release/
+tmp/
+assets/*.zt[spm]
+*.tiled-session
+.DS_Store
+.claude/memory/
+.claude/settings.local.json
+build/

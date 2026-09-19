@@ -1,0 +1,13 @@
+.TH dumbif 1 "23 Aug 2026" dumbif "dumbif manual"
+.SH NAME
+dumbif \- Short description of the project
+.SH SYNOPSIS
+dumbif
+.SH DESCRIPTION
+Short description of the project
+.SH OPTIONS
+
+.SH SEE ALSO
+
+.SH BUGS
+No known bugs.
