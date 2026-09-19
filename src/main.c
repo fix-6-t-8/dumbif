@@ -2,6 +2,7 @@
 #include <zos_errors.h>
 #include <string.h>
 #include <zos_vfs.h>
+#include "scene.h"
 
 int main(int argc, char** argv) {
     //ZealOS does not produce a standard argc, argv format.
@@ -24,12 +25,14 @@ int main(int argc, char** argv) {
                 printf("error while opening file : %d\n", (int) err);
                 return ERR_FAILURE;
             }
+            read10(fd);
         }
     }   
     else {
         printf ("usage : dumbif.bin absolute_full_path_to_the_.dat_file.\n");
         return ERR_FAILURE;
     }
+
     printf("OK\n");
     close (fd);
     return ERR_SUCCESS;

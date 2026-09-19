@@ -31,6 +31,7 @@ project(${target_name} C ASM)
 # -------------------------------
 add_executable(${target_name}
   src/main.c
+  src/scene.c
 )
 
 # -------------------------------
