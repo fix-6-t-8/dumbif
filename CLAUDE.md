@@ -8,16 +8,27 @@ en **C**, tournant sur **Zeal 8-bit OS** (CPU Z80).
 - `dumbif` est le **successeur** de `~/projects/zeal/zeal-if-compact/zeal-if-compact`,
   mais il est **réécrit intégralement from scratch**. L'ancien code n'est **pas** à
   réutiliser ni à porter ; il ne sert que de référence d'intention si besoin.
-- État actuel (2026-09-19) : **premier jalon fonctionnel**, testé OK par l'utilisateur.
-  `src/main.c` reçoit le chemin du `.dat` en argument, vérifie sa longueur, l'ouvre
-  (`open`, `O_RDONLY`), appelle `read10(fd)` puis ferme le fichier.
-  `read10()` (`src/scene.c`, prototype dans `src/scene.h`) lit et affiche les
-  10 premiers octets du fichier. C'est du code **câblé de test** : dans le découpage
-  validé, la lecture du `.dat` (`read`/`seek`) relève de `story.c`, pas de `scene.c`.
-  `story.c/.h`, `input.c/.h` et `dumbif.h` existent mais sont **vides**.
-- Le format de scénario, le parser, le moteur et la boucle de jeu restent **à définir
-  avec l'utilisateur** — ne rien présupposer. Documents de travail à la racine :
-  `scene_design.md` (format runtime), `file-management.md` (gestion des fichiers).
+- État actuel (relu le 2026-09-21) : **premier jalon fonctionnel**, testé OK par
+  l'utilisateur le 2026-09-19. `src/main.c:14-36` reçoit le chemin du `.dat` en
+  argument, vérifie sa longueur, l'ouvre (`open`, `O_RDONLY`), appelle `read10(fd)`
+  puis ferme le fichier. `read10()` (`src/scene.c:4-15`, prototype `src/scene.h:6`)
+  lit et affiche les 10 premiers octets. C'est du code **câblé de test** : dans le
+  découpage validé, la lecture du `.dat` (`read`/`seek`) relève de `story.c`.
+  `story.c/.h`, `input.h` et `dumbif.h` sont **vides** ; `input.c` ne contient qu'un
+  squelette `void read10() {}` (non compilé : absent de `CMakeLists.txt:32-35`).
+  Modification de `main.c` non commitée (commentaires retirés) au 2026-09-21.
+- **Format runtime validé (2026-09-21)** : un **seul fichier lu au runtime**, le `.dat`
+  autonome (table d'offsets + texte des scènes + destinations), tel que décrit dans
+  `scene_design.md`. Le `.if` n'est lu que par l'indexeur sur PC, jamais par le moteur.
+  Le parser (indexeur), le moteur et la boucle de jeu restent **à écrire** ; points non
+  tranchés : voir `scene_design.md`, « Points non tranchés ». Documents de travail à la
+  racine : `scene_design.md` (format runtime), `file-management.md` (fichiers).
+- Scénario de test : `story/bye.if` + `story/bye.dat` (2 scènes, anglais, ASCII pur).
+  Scène 0 `[intro]` : 600 octets de texte pile (limite max fixée par l'utilisateur),
+  1 commande `*au revoir*` -> scène 1. Scène 1 `[au revoir]` : 147 octets, 0 commande.
+  Offsets 7 / 611 / 761. Générés par Claude (script hors dépôt, textes en dur : ce
+  n'est **pas** l'indexeur). Une scène de 600 octets pèse 604 octets : le buffer de
+  512 octets « à confirmer » du design est trop petit.
 - Cible de test : **émulateur natif** Zeal (voir « Exécuter / tester »).
 
 ## Repères de l'écosystème (chemins locaux)
@@ -196,9 +207,9 @@ dumbif/
 │   ├── main.c          # argument -> open -> read10() -> close
 │   ├── scene.c/.h      # read10() : lit et affiche 10 octets (test câblé)
 │   ├── story.c/.h      # vides
-│   ├── input.c/.h      # vides
+│   ├── input.c/.h      # input.c : squelette read10() non compilé ; input.h vide
 │   └── dumbif.h        # vide
-├── story/              # dumb.if, dumb.dat (scénario de test)
+├── story/              # bye.if, bye.dat (scénario de test ; dumb.* supprimés, non commité)
 ├── bin/                # sorties de build : .bin / .ihx / .map (ignoré par git)
 ├── build/              # répertoire CMake, généré dans le conteneur ZDE (ignoré)
 ├── scene_design.md     # format runtime des scènes
@@ -212,6 +223,13 @@ dumbif/
 
 ## Prochaine étape
 
-Aucune prochaine étape n'a été définie lors de la session du 2026-09-19. Seule
-remarque en suspens : la lecture du `.dat` (`read10`) devra quitter `scene.c` pour
-`story.c`, conformément au découpage validé.
+Définie le 2026-09-21 : **l'utilisateur commence par le lecteur runtime** (avant
+l'indexeur), avec `story/bye.dat` comme fichier de test. Il code lui-même ; mon rôle
+est d'expliquer et de vérifier.
+
+Points à garder en tête pour cette étape :
+- la lecture du `.dat` (`read10`) doit quitter `scene.c` pour `story.c` ;
+- les textes du `.dat` ne sont **pas** terminés par `'\0'` (format préfixé) : afficher
+  avec la longueur (`write`) ou poser soi-même le `'\0'` dans le buffer ;
+- entiers 16 bits en petit-boutiste, lisibles tels quels dans un `uint16_t` ;
+- taille du buffer de scène à fixer (≥ 604 octets pour une scène à 600 caractères).
